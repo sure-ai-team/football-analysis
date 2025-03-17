@@ -1,1 +1,1 @@
-app/models/yolov11_football_best.pt filter=lfs diff=lfs merge=lfs -text
+*.pt filter=lfs diff=lfs merge=lfs -text
