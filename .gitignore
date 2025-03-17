@@ -167,5 +167,20 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# VSCode
+.vscode/
+
 # PyPI configuration file
 .pypirc
+
+# Large folders and files
+ultralytics/
+segment-anything-2/
+app/models/sam_models/
+*.mp4
+*.pt
+
+# Model outputs and runs
+runs/
+models/
+ultralytics_results_with_sahi/

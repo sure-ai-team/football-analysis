@@ -1,0 +1,18 @@
+ultralytics==8.3.78
+roboflow==1.1.54
+gdown
+inference-gpu
+more-itertools
+plotly
+ipywidgets
+sahi
+supervision>=0.23.0
+supervision[assets]
+jupyter_bbox_widget
+tikzplotlib
+jpeg4py
+lmdb
+scipy
+loguru
+onnxruntime-gpu==1.18.0 --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+git+https://github.com/roboflow/sports.git
