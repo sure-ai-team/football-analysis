@@ -179,7 +179,7 @@ cython_debug/
 # Large folders and files
 ultralytics/
 segment-anything-2/
-app/models/
+app/models/sam_models/
 *.mp4
 *.pt
 
