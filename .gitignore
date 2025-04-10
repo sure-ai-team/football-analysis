@@ -214,3 +214,4 @@ ENV/
 runs/
 models/
 ultralytics_results_with_sahi/
+src/boxmot/
