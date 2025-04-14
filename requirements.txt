@@ -29,3 +29,6 @@ umap-learn>=0.5.3
 scikit-learn>=1.0.0
 tqdm>=4.65.0
 Pillow>=9.0.0
+paddleocr
+paddlepaddle-gpu
+paddlepaddle
