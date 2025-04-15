@@ -215,3 +215,6 @@ runs/
 models/
 ultralytics_results_with_sahi/
 src/boxmot/
+
+# GTA link directory
+gta_link/
