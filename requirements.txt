@@ -36,3 +36,7 @@ paddleocr
 torchreid
 loguru
 Pillow
+groq
+fastapi
+uvicorn[standard]
+python-multipart
