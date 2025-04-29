@@ -64,7 +64,7 @@ def run_video_processing_task(temp_video_path: str, output_dir: str):
 
 # --- API Endpoints ---
 
-@router.post("/process-video/", response_model=ProcessingResponse, status_code=202)
+# @router.post("/process-video/", response_model=ProcessingResponse, status_code=202)
 async def process_video_endpoint(
     background_tasks: BackgroundTasks,
     video_file: UploadFile = File(...)
