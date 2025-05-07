@@ -133,7 +133,7 @@ def main(input_video_path: str, output_video_path: str):
 
 
     # Initialize Ball Trail Deque (needs FPS)
-    initialize_ball_trail(fps)
+    # initialize_ball_trail(fps)
 
     # Initialize Video Reader and Writer
     frame_generator = sv.get_video_frames_generator(source_path=str(input_video_path), stride=config.FRAME_STRIDE)

@@ -191,6 +191,7 @@ app/models/sam_models/
 
 # Large media files
 *.mp4
+*.MP4
 *.avi
 *.mov
 *.mkv
@@ -218,3 +219,6 @@ src/boxmot/
 
 # GTA link directory
 gta_link/
+
+# Debug directories
+ocr_debug_crops/

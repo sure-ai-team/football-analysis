@@ -8,6 +8,7 @@ import cv2
 import config
 import logging
 import os
+import boto3
 
 # --- Color Utilities ---
 
@@ -260,4 +261,18 @@ def save_ocr_debug_crop(frame_idx: int, track_id: int, player_crop: np.ndarray, 
         # logging.debug(f"Saved OCR debug crops for frame {frame_idx}, track {track_id}")
     except Exception as write_e:
         logging.warning(f"Error saving OCR debug crop for frame {frame_idx}, track {track_id}: {write_e}")
+
+# --- S3 Utilities ---
+
+def download_from_s3(bucket_name, object_key, download_path):
+    """
+    Downloads a file from an S3 bucket.
+
+    :param bucket_name: Name of the S3 bucket
+    :param object_key: Key of the object in the S3 bucket
+    :param download_path: Local path to save the downloaded file
+    """
+    s3 = boto3.client('s3')
+    s3.download_file(bucket_name, object_key, download_path)
+    print(f"Downloaded {object_key} from bucket {bucket_name} to {download_path}")
 

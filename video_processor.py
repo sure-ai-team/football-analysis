@@ -13,6 +13,7 @@ import traceback
 import random
 import math
 import torch
+from typing import Union, Optional
 
 # Import from local modules
 import config
@@ -69,7 +70,7 @@ def process_frame(
     frame: np.ndarray,
     frame_idx: int,
     player_detection_model, # YOLO model
-    team_classifier: TeamClassifier | None, # Fitted TeamClassifier instance
+    team_classifier: Optional[TeamClassifier], # Fitted TeamClassifier instance
     tracker: BotSort, # Initialized BoTSORT instance
     ocr_model, # Initialized OCR model (or None)
     ocr_available: bool, # Flag if OCR is usable

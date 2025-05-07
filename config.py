@@ -15,7 +15,8 @@ HOME = os.getcwd()
 
 # --- Model Paths ---
 # PLAYER_DETECTION_MODEL_ID = "football-players-detection-3zvbc/12" # Example Roboflow ID
-PLAYER_DETECTION_MODEL_PATH = "app/models/yolo11_football_v2/weights/best.pt" # Local YOLO path
+PLAYER_DETECTION_MODEL_PATH = "app/models/yolo_7-5-2025.pt"
+# "app/models/yolo11_football_v2/weights/best.pt" # Local YOLO path
 SIGLIP_MODEL_PATH = 'google/siglip-base-patch16-224'
 REID_WEIGHTS_PATH = Path('clip_market1501.pt') # Path for BoTSORT ReID weights
 
@@ -62,7 +63,7 @@ LOST_TRACK_MEMORY_SECONDS = 20 # How long to remember a lost track ID with a jer
 MISMATCH_CONSISTENCY_FRAMES = 3 # How many consecutive frames a different jersey number must be seen to switch
 
 # --- Ball Trail Configuration ---
-BALL_TRAIL_ENABLED = True
+BALL_TRAIL_ENABLED = False
 BALL_TRAIL_SECONDS = 1
 SPARKLE_COUNT = 3
 SPARKLE_RADIUS = 2
