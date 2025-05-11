@@ -153,7 +153,10 @@ def process_frame(
         # 3. Team/Role Classification
         players_detections = people_detections[people_detections.class_id == config.PLAYER_ID]
         goalkeepers_detections = people_detections[people_detections.class_id == config.GOALKEEPER_ID]
-        referees_detections = people_detections[people_detections.class_id == config.REFEREE_ID]
+        referees_detections = people_detections[
+            (people_detections.class_id == config.MAIN_REFEREE_ID) |
+            (people_detections.class_id == config.SIDE_REFEREE_ID)
+        ]
 
         # --- Player Classification ---
         classified_players = sv.Detections.empty()
@@ -423,7 +426,7 @@ def process_frame(
                 if assigned_jersey_id is not None:
                     display_id = f"{base_label} #{assigned_jersey_id}"
 
-                final_labels.append(display_id)
+                final_labels.append(display_id) # samah el sayed / mohamed aly
 
         # 6. Update Global Player Data & Handle Lost Tracks
         # Identify tracks that were present in the previous frame but not in the current one

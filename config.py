@@ -30,21 +30,28 @@ DETECTION_NMS_THRESHOLD = 0.5
 TRACKER_HALF_PRECISION = False # Set to True if using half precision for BoTSORT
 TRACKER_WITH_REID = REID_WEIGHTS_PATH.exists() # Enable ReID if weights file exists
 
-# --- Class IDs (from detection model) ---
+# --- Class IDs (from NEW detection model data.yaml) ---
+# nc: 6
+# names: ['Ball', 'Goalkeeper', 'Main referee', 'Player', 'Side referee', 'Staff members']
 BALL_ID = 0
 GOALKEEPER_ID = 1
-PLAYER_ID = 2
-REFEREE_ID = 3
+MAIN_REFEREE_ID = 2
+PLAYER_ID = 3
+SIDE_REFEREE_ID = 4
+STAFF_MEMBERS_ID = 5
+# Note: Old REFEREE_ID = 3 is removed. Main and Side referees are now distinct.
 
 # --- Team/Role IDs (assigned *after* classification/resolution) ---
+# These are logical IDs used internally after initial detection and role assignment.
+# Their specific values (0, 1, 2) are distinct from the detection model's class IDs.
 TEAM_A_ID = 0 # Example ID for Team A (defends left goal in fallback)
 TEAM_B_ID = 1 # Example ID for Team B (defends right goal in fallback)
-REFEREE_TEAM_ID = 2 # Example ID for Referee
+REFEREE_TEAM_ID = 2 # Example ID for all Referees (Main or Side) after they are grouped.
 
 # --- Color Configuration ---
 DEFAULT_TEAM_A_COLOR = sv.Color.from_hex('#FF0000') # Red
-DEFAULT_TEAM_B_COLOR = sv.Color.from_hex('#00FFFF') # Cyan (Original was Yellow, changed based on comment)
-DEFAULT_REFEREE_COLOR = sv.Color.from_hex('#FFFF00') # Yellow (Original was Cyan, changed based on comment)
+DEFAULT_TEAM_B_COLOR = sv.Color.from_hex('#00FFFF') # Cyan
+DEFAULT_REFEREE_COLOR = sv.Color.from_hex('#FFFF00') # Yellow
 FALLBACK_COLOR = sv.Color.from_hex('#808080') # Grey
 COLOR_SIMILARITY_THRESHOLD = 50.0 # Max RGB distance diff to be considered ambiguous for GK resolution
 CENTRAL_FRACTION_FOR_COLOR = 0.5 # Fraction of bbox center to use for average color
@@ -69,7 +76,7 @@ SPARKLE_COUNT = 3
 SPARKLE_RADIUS = 2
 SPARKLE_OFFSET = 3
 MAX_BALL_DISTANCE_PER_FRAME = 400 # Max pixels ball can move between frames (Tune this!)
-BALL_TRAIL_BASE_COLOR = (0, 255, 255) # Bright Cyan (BGR) - Adjusted from original comment
+BALL_TRAIL_BASE_COLOR = (0, 255, 255) # Bright Cyan (BGR)
 BALL_TRAIL_THICKNESS = 1
 SPARKLE_BASE_INTENSITY = 150
 SPARKLE_MAX_INTENSITY = 255

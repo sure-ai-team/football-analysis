@@ -27,3 +27,4 @@ fastapi
 uvicorn[standard]
 python-multipart
 boto3
+git+https://github.com/roboflow/sports.git

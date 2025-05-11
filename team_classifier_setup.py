@@ -2,7 +2,7 @@ import supervision as sv
 import numpy as np
 from tqdm import tqdm
 import logging
-import config
+import config # Uses updated class IDs from config.py
 import cv2
 import os # Added import for os.path.exists
 
@@ -59,8 +59,8 @@ def setup_team_classifier(player_detection_model, source_video_path: str):
                 tqdm_display_total = min(frames_generator_would_yield, MAX_FRAMES_FOR_SETUP_LIMIT)
             # If video_info.total_frames is 0 or not available, tqdm_display_total remains MAX_FRAMES_FOR_SETUP_LIMIT
             elif video_info.total_frames == 0:
-                 tqdm_display_total = 0 # Video has no frames
-                 logging.warning("Video source reports 0 total frames.")
+                tqdm_display_total = 0 # Video has no frames
+                logging.warning("Video source reports 0 total frames.")
 
         except Exception as e:
             # If sv.VideoInfo fails, tqdm_display_total remains MAX_FRAMES_FOR_SETUP_LIMIT
@@ -85,9 +85,9 @@ def setup_team_classifier(player_detection_model, source_video_path: str):
 
                 detections = sv.Detections.from_ultralytics(results[0])
                 # Apply NMS if needed (optional for setup, but good practice)
-                # detections = detections.with_nms(threshold=config.DETECTION_NMS_THRESHOLD, class_agnostic=True)
+                detections = detections.with_nms(threshold=config.DETECTION_NMS_THRESHOLD, class_agnostic=True)
 
-                # Filter for player detections
+                # Filter for player detections using the NEW PLAYER_ID from config
                 players_detections = detections[detections.class_id == config.PLAYER_ID]
 
                 # Crop player images
@@ -134,109 +134,3 @@ def setup_team_classifier(player_detection_model, source_video_path: str):
     except Exception as e:
         logging.error(f"Error initializing or fitting TeamClassifier: {e}", exc_info=True)
         return None
-
-# Example usage (optional, for testing)
-if __name__ == "__main__":
-    print("Testing Team Classifier Setup...")
-    # This requires a valid video path and a loaded detection model
-    # Replace with actual paths/models for testing
-    # Ensure your config.py has appropriate values for:
-    # TEAM_CLASSIFIER_STRIDE, DETECTION_CONFIDENCE_THRESHOLD, DEVICE, PLAYER_ID
-    
-    # Create a dummy config.py if it doesn't exist for basic testing structure
-    if not os.path.exists("config.py"):
-        with open("config.py", "w") as f:
-            f.write("TEAM_CLASSIFIER_STRIDE = 10\n")
-            f.write("DETECTION_CONFIDENCE_THRESHOLD = 0.3\n")
-            f.write("DEVICE = 'cpu'\n") # or 'cuda' if available
-            f.write("PLAYER_ID = 0 # Assuming player class ID is 0\n")
-            f.write("DETECTION_NMS_THRESHOLD = 0.5\n") # Example, if you uncomment NMS
-        print("Created a dummy config.py for testing.")
-
-    # Configure logging for the test
-    logging.basicConfig(level=logging.INFO)
-
-
-    TEST_VIDEO = "path/to/your/test_video.mp4" # <--- !!! REPLACE WITH A VALID VIDEO PATH !!!
-    
-    # Mock player_detection_model and its predict method for standalone testing
-    class MockPlayerDetectionModel:
-        def predict(self, frame, conf, device, verbose):
-            # Simulate some detections
-            # In a real scenario, this would return actual detection results
-            # For testing, let's assume it finds one player in the center
-            h, w, _ = frame.shape
-            # Return a list containing one result object (like Ultralytics output)
-            class MockResult:
-                def __init__(self, boxes_data, orig_img_shape):
-                    self.boxes = MockBoxes(boxes_data) # ultralytics.engine.results.Boxes
-                    self.orig_shape = orig_img_shape # e.g., (720, 1280)
-
-            class MockBoxes: # Simulates ultralytics.engine.results.Boxes
-                def __init__(self, data):
-                    # data is expected to be a tensor or ndarray like [x1, y1, x2, y2, conf, cls_id]
-                    self.data = np.array(data) if data else np.empty((0,6))
-                @property
-                def xyxy(self): return self.data[:, :4]
-                @property
-                def conf(self): return self.data[:, 4]
-                @property
-                def cls(self): return self.data[:, 5]
-
-
-            # Simulate one detection of class PLAYER_ID (e.g., 0)
-            player_box = [w*0.4, h*0.4, w*0.6, h*0.6, 0.9, config.PLAYER_ID] # x1,y1,x2,y2,conf,class_id
-            
-            # Simulate no detections sometimes
-            if np.random.rand() < 0.3: # 30% chance of no detections
-                 mock_result_data = []
-            else:
-                 mock_result_data = [player_box]
-
-            return [MockResult(mock_result_data, frame.shape[:2])]
-
-
-    # Attempt to load a real model if available, otherwise use mock
-    real_detector = None
-    try:
-        from models import load_player_detection_model # Assuming this exists
-        # Check if a model can be loaded (e.g., by checking a path or a flag)
-        # For this example, let's assume it tries to load and might fail
-        # real_detector = load_player_detection_model() # This would be your actual model loading
-        pass # Keep real_detector as None to use Mock by default for this example
-    except ImportError:
-        print("Skipping real model loading: 'models.py' or 'load_player_detection_model' not found.")
-    
-    test_detector_to_use = real_detector if real_detector else MockPlayerDetectionModel()
-    print(f"Using {'real' if real_detector else 'mock'} player detection model for the test.")
-
-    if not os.path.exists(TEST_VIDEO):
-        print(f"Test video not found at '{TEST_VIDEO}'. Please update the path.")
-        # Create a dummy video file for testing if it doesn't exist
-        # This requires OpenCV to be installed (cv2)
-        try:
-            print(f"Attempting to create a dummy video file: {TEST_VIDEO}")
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            # Create a short video (e.g., 600 frames to test the 500 limit)
-            num_dummy_frames = 700 # More than MAX_FRAMES_FOR_SETUP_LIMIT
-            out = cv2.VideoWriter(TEST_VIDEO, fourcc, 20.0, (640, 480))
-            for _ in range(num_dummy_frames):
-                frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                cv2.putText(frame, 'Dummy Frame', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                out.write(frame)
-            out.release()
-            print(f"Dummy video '{TEST_VIDEO}' created with {num_dummy_frames} frames. Please re-run the test.")
-        except Exception as e:
-            print(f"Could not create dummy video: {e}. Please provide a valid TEST_VIDEO path.")
-    else:
-        print(f"Test video found at '{TEST_VIDEO}'.")
-        if test_detector_to_use:
-            print("Proceeding with Team Classifier setup test...")
-            classifier = setup_team_classifier(test_detector_to_use, TEST_VIDEO)
-            if classifier:
-                print("Team Classifier setup test completed successfully.")
-            else:
-                print("Team Classifier setup test failed.")
-        else:
-            print("Skipping test: Detection model (real or mock) is not available.")
-
