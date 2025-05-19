@@ -222,3 +222,10 @@ gta_link/
 
 # Debug directories
 ocr_debug_crops/
+
+# Dataset folders
+unified_soccer_dataset/
+X_321_5star-13/
+Referee-9/
+FYP-5/
+Football-player-detection-7/

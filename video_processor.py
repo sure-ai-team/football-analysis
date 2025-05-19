@@ -75,7 +75,8 @@ def process_frame(
     ocr_model, # Initialized OCR model (or None)
     ocr_available: bool, # Flag if OCR is usable
     video_info: sv.VideoInfo, # Video properties
-    fps: float # Video FPS for time-based logic
+    fps: float, # Video FPS for time-based logic
+    clip_extractor = None # Optional ClipExtractor instance
 ):
     """
     Processes a single video frame for detection, tracking, classification, and annotation.
@@ -90,6 +91,7 @@ def process_frame(
         ocr_available: Boolean indicating if OCR can be used.
         video_info: Information about the video (width, height, etc.).
         fps: Frames per second of the video.
+        clip_extractor: Optional ClipExtractor instance for clip extraction.
 
     Returns:
         The annotated frame (NumPy array BGR), or the original frame if errors occur.
@@ -153,10 +155,7 @@ def process_frame(
         # 3. Team/Role Classification
         players_detections = people_detections[people_detections.class_id == config.PLAYER_ID]
         goalkeepers_detections = people_detections[people_detections.class_id == config.GOALKEEPER_ID]
-        referees_detections = people_detections[
-            (people_detections.class_id == config.MAIN_REFEREE_ID) |
-            (people_detections.class_id == config.SIDE_REFEREE_ID)
-        ]
+        referees_detections = people_detections[people_detections.class_id == config.MAIN_REFEREE_ID]
 
         # --- Player Classification ---
         classified_players = sv.Detections.empty()
@@ -477,50 +476,76 @@ def process_frame(
         annotated_frame = frame.copy() # Work on a copy
 
         # --- Annotate "Magical" Ball Trail ---
-        if config.BALL_TRAIL_ENABLED and ball_positions is not None and len(ball_positions) >= 2:
-            num_points = len(ball_positions)
-            for i in range(1, num_points):
-                pt1 = ball_positions[i-1]
-                pt2 = ball_positions[i]
-                # Ensure points are valid tuples before drawing
-                if isinstance(pt1, tuple) and isinstance(pt2, tuple) and len(pt1) == 2 and len(pt2) == 2:
-                    # Draw trail line
-                    cv2.line(annotated_frame, pt1, pt2, config.BALL_TRAIL_BASE_COLOR, config.BALL_TRAIL_THICKNESS, lineType=cv2.LINE_AA) # Smoother line
+        # if config.BALL_TRAIL_ENABLED and ball_positions is not None and len(ball_positions) >= 2:
+        #     num_points = len(ball_positions)
+        #     for i in range(1, num_points):
+        #         pt1 = ball_positions[i-1]
+        #         pt2 = ball_positions[i]
+        #         # Ensure points are valid tuples before drawing
+        #         if isinstance(pt1, tuple) and isinstance(pt2, tuple) and len(pt1) == 2 and len(pt2) == 2:
+        #             # Draw trail line
+        #             cv2.line(annotated_frame, pt1, pt2, config.BALL_TRAIL_BASE_COLOR, config.BALL_TRAIL_THICKNESS, lineType=cv2.LINE_AA) # Smoother line
 
-                    # --- Add Sparkles ---
-                    # Calculate alpha for intensity fade (optional)
-                    alpha_fraction = (i - 1) / max(1, num_points - 1) # Normalize index
-                    sparkle_intensity = int(config.SPARKLE_BASE_INTENSITY + (config.SPARKLE_MAX_INTENSITY - config.SPARKLE_BASE_INTENSITY) * alpha_fraction)
-                    sparkle_color = (sparkle_intensity, sparkle_intensity, sparkle_intensity) # Grayscale sparkle
+        #             # --- Add Sparkles ---
+        #             # Calculate alpha for intensity fade (optional)
+        #             alpha_fraction = (i - 1) / max(1, num_points - 1) # Normalize index
+        #             sparkle_intensity = int(config.SPARKLE_BASE_INTENSITY + (config.SPARKLE_MAX_INTENSITY - config.SPARKLE_BASE_INTENSITY) * alpha_fraction)
+        #             sparkle_color = (sparkle_intensity, sparkle_intensity, sparkle_intensity) # Grayscale sparkle
 
-                    # Draw multiple sparkles around the point pt2
-                    for _ in range(config.SPARKLE_COUNT):
-                        offset_x = random.randint(-config.SPARKLE_OFFSET, config.SPARKLE_OFFSET)
-                        offset_y = random.randint(-config.SPARKLE_OFFSET, config.SPARKLE_OFFSET)
-                        sparkle_pt = (pt2[0] + offset_x, pt2[1] + offset_y)
-                        # Clamp sparkle points to frame boundaries
-                        sparkle_pt_clamped = (
-                            max(0, min(width - 1, sparkle_pt[0])),
-                            max(0, min(height - 1, sparkle_pt[1]))
-                        )
-                        cv2.circle(annotated_frame, sparkle_pt_clamped, config.SPARKLE_RADIUS, sparkle_color, -1) # Filled circle
+        #             # Draw multiple sparkles around the point pt2
+        #             for _ in range(config.SPARKLE_COUNT):
+        #                 offset_x = random.randint(-config.SPARKLE_OFFSET, config.SPARKLE_OFFSET)
+        #                 offset_y = random.randint(-config.SPARKLE_OFFSET, config.SPARKLE_OFFSET)
+        #                 sparkle_pt = (pt2[0] + offset_x, pt2[1] + offset_y)
+        #                 # Clamp sparkle points to frame boundaries
+        #                 sparkle_pt_clamped = (
+        #                     max(0, min(width - 1, sparkle_pt[0])),
+        #                     max(0, min(height - 1, sparkle_pt[1]))
+        #                 )
+        #                 cv2.circle(annotated_frame, sparkle_pt_clamped, config.SPARKLE_RADIUS, sparkle_color, -1) # Filled circle
 
         # --- Annotate Current Ball Position ---
-        if config.BALL_TRAIL_ENABLED and ball_positions is not None and len(ball_positions) > 0:
-            last_pos = ball_positions[-1]
-            if isinstance(last_pos, tuple) and len(last_pos) == 2:
-                # Clamp position just in case
-                last_pos_clamped = (
-                     max(0, min(width - 1, last_pos[0])),
-                     max(0, min(height - 1, last_pos[1]))
+        # if config.BALL_TRAIL_ENABLED and ball_positions is not None and len(ball_positions) > 0:
+        #     last_pos = ball_positions[-1]
+        #     if isinstance(last_pos, tuple) and len(last_pos) == 2:
+        #         # Clamp position just in case
+        #         last_pos_clamped = (
+        #              max(0, min(width - 1, last_pos[0])),
+        #              max(0, min(height - 1, last_pos[1]))
+        #         )
+        #         cv2.circle(
+        #             annotated_frame,
+        #             last_pos_clamped,
+        #             config.CURRENT_BALL_MARKER_RADIUS,
+        #             config.CURRENT_BALL_MARKER_COLOR,
+        #             config.CURRENT_BALL_MARKER_THICKNESS # Filled
+        #         )
+
+
+        # --- Annotate Detected Balls (using CircleAnnotator) ---
+        if len(ball_detections) > 0:
+            try:
+                ball_circle_annotator = sv.CircleAnnotator(
+                    color=config.BALL_ANNOTATION_COLOR,
+                    thickness=config.BALL_CIRCLE_THICKNESS,
+                    color_lookup=sv.ColorLookup.INDEX
                 )
-                cv2.circle(
-                    annotated_frame,
-                    last_pos_clamped,
-                    config.CURRENT_BALL_MARKER_RADIUS,
-                    config.CURRENT_BALL_MARKER_COLOR,
-                    config.CURRENT_BALL_MARKER_THICKNESS # Filled
-                )
+                annotated_frame = ball_circle_annotator.annotate(annotated_frame, ball_detections)
+
+                if config.BALL_LABEL_ENABLED:
+                    ball_label_annotator = sv.LabelAnnotator(
+                        color=config.BALL_ANNOTATION_COLOR, # Use ball color for label background
+                        text_color=config.LABEL_TEXT_COLOR, # Reuse player text color config
+                        text_position=config.LABEL_TEXT_POSITION, # Reuse player position config
+                        text_scale=config.LABEL_TEXT_SCALE,       # Reuse player scale config
+                        text_thickness=config.LABEL_TEXT_THICKNESS, # Reuse player thickness config
+                        color_lookup=sv.ColorLookup.INDEX
+                    )
+                    # Create labels for all detected balls
+                    ball_labels = [config.BALL_LABEL_TEXT] * len(ball_detections)
+                    annotated_frame = ball_label_annotator.annotate(annotated_frame, ball_detections, labels=ball_labels)
+            except Exception as e_ball_ann:
+                logging.error(f"[Frame {frame_idx}] Error during ball annotation: {e_ball_ann}")
 
 
         # --- Annotate Tracked People (Players, GKs, Refs) ---
@@ -567,6 +592,11 @@ def process_frame(
                         annotated_frame = label_annotator.annotate(annotated_frame, team_detections, labels=team_labels)
                     except Exception as e_label:
                          logging.error(f"[Frame {frame_idx}] Error during label annotation for team {current_team_id}: {e_label}")
+
+        # --- Process for Clip Extraction (if enabled and available) ---
+        if config.CLIP_EXTRACTION_ENABLED and clip_extractor is not None:
+            # Pass all tracked detections, clip_extractor will filter for players internally
+            clip_extractor.process_frame(frame_idx, annotated_frame, ball_detections, tracked_detections)
 
         return annotated_frame
 

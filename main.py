@@ -21,6 +21,7 @@ import config
 from models import load_player_detection_model, load_ocr_model
 from team_classifier_setup import setup_team_classifier, TEAM_CLASSIFIER_AVAILABLE
 from video_processor import initialize_tracker, initialize_ball_trail, process_frame
+from clip_extractor import ClipExtractor # Import ClipExtractor
 
 # Configure logging based on config file
 logging.basicConfig(level=getattr(logging, config.LOG_LEVEL.upper(), logging.WARNING),
@@ -62,6 +63,15 @@ def main(input_video_path: str, output_video_path: str):
              logging.info(f"Created OCR debug directory: {config.OCR_DEBUG_DIR}")
          except OSError as e:
              logging.warning(f"Could not create OCR debug directory '{config.OCR_DEBUG_DIR}': {e}. Debug images will not be saved.")
+
+    if config.CLIP_EXTRACTION_ENABLED and config.CLIP_OUTPUT_DIR:
+        try:
+            os.makedirs(config.CLIP_OUTPUT_DIR, exist_ok=True)
+            logging.info(f"Ensured clip output directory exists: {config.CLIP_OUTPUT_DIR}")
+        except OSError as e:
+            logging.error(f"Could not create clip output directory '{config.CLIP_OUTPUT_DIR}': {e}. Clip extraction might fail.")
+            # Optionally, disable clip extraction if directory cannot be made
+            # config.CLIP_EXTRACTION_ENABLED = False
 
 
     # --- Load Models ---
@@ -133,7 +143,17 @@ def main(input_video_path: str, output_video_path: str):
 
 
     # Initialize Ball Trail Deque (needs FPS)
-    # initialize_ball_trail(fps)
+    initialize_ball_trail(fps)
+
+    # Initialize Clip Extractor (if enabled)
+    clip_extractor = None
+    if config.CLIP_EXTRACTION_ENABLED:
+        if video_info and fps > 0:
+            clip_extractor = ClipExtractor(fps=fps, video_info=video_info, output_dir=config.CLIP_OUTPUT_DIR)
+            logging.info("ClipExtractor initialized.")
+        else:
+            logging.warning("Cannot initialize ClipExtractor: Video info or FPS not available. Clip extraction will be disabled.")
+            # config.CLIP_EXTRACTION_ENABLED = False # Keep it as per original config, but it won't work
 
     # Initialize Video Reader and Writer
     frame_generator = sv.get_video_frames_generator(source_path=str(input_video_path), stride=config.FRAME_STRIDE)
@@ -167,7 +187,8 @@ def main(input_video_path: str, output_video_path: str):
                         ocr_model=ocr_model,
                         ocr_available=ocr_available,
                         video_info=video_info,
-                        fps=fps
+                        fps=fps,
+                        clip_extractor=clip_extractor # Pass clip_extractor instance
                     )
 
                     # Write the annotated frame to the output video
@@ -200,6 +221,30 @@ def main(input_video_path: str, output_video_path: str):
         # Close frame generator if it has a close method (good practice)
         if hasattr(frame_generator, 'close'):
              frame_generator.close()
+        
+        # Finalize any pending clips
+        if clip_extractor is not None and config.CLIP_EXTRACTION_ENABLED:
+            # Determine the last processed frame index to pass to finalize_all_clips
+            # 'actual_frame_idx' would be the last one processed in the loop.
+            # If loop broke early, frame_idx might be the last one attempted.
+            # A simple way is to track the last successfully processed frame index.
+            # For now, let's assume frame_idx (from enumerate) * stride gives a good estimate
+            # If the loop finished, actual_frame_idx would be the last one.
+            # If it broke, it's the one that caused the break or the one before.
+            # Let's use the last `actual_frame_idx` computed. It will be defined if loop ran at least once.
+            last_idx_for_clips = -1
+            try:
+                # If loop completed or broke, actual_frame_idx holds the last relevant index
+                last_idx_for_clips = actual_frame_idx 
+            except NameError: # actual_frame_idx might not be defined if loop never ran
+                logging.warning("Loop did not run, no frame index for clip finalization.")
+            
+            if last_idx_for_clips != -1:
+                clip_extractor.finalize_all_clips(last_idx_for_clips)
+            else: # If loop never ran, pass 0 or a sensible default, though unlikely to have active interactions
+                clip_extractor.finalize_all_clips(0)
+
+
         logging.info(f"Finished processing. Annotated video saved to: {output_video_path}")
 
         # Clear CUDA cache if GPU was used

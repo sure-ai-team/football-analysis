@@ -15,7 +15,7 @@ HOME = os.getcwd()
 
 # --- Model Paths ---
 # PLAYER_DETECTION_MODEL_ID = "football-players-detection-3zvbc/12" # Example Roboflow ID
-PLAYER_DETECTION_MODEL_PATH = "app/models/yolo_7-5-2025.pt"
+PLAYER_DETECTION_MODEL_PATH = "app/models/yolo11/yolo11_football_5-11-20256/weights/last.pt"
 # "app/models/yolo11_football_v2/weights/best.pt" # Local YOLO path
 SIGLIP_MODEL_PATH = 'google/siglip-base-patch16-224'
 REID_WEIGHTS_PATH = Path('clip_market1501.pt') # Path for BoTSORT ReID weights
@@ -34,11 +34,11 @@ TRACKER_WITH_REID = REID_WEIGHTS_PATH.exists() # Enable ReID if weights file exi
 # nc: 6
 # names: ['Ball', 'Goalkeeper', 'Main referee', 'Player', 'Side referee', 'Staff members']
 BALL_ID = 0
-GOALKEEPER_ID = 1
-MAIN_REFEREE_ID = 2
-PLAYER_ID = 3
-SIDE_REFEREE_ID = 4
-STAFF_MEMBERS_ID = 5
+GOALKEEPER_ID = 2
+MAIN_REFEREE_ID = 3
+PLAYER_ID = 1
+# SIDE_REFEREE_ID = 4
+# STAFF_MEMBERS_ID = 5
 # Note: Old REFEREE_ID = 3 is removed. Main and Side referees are now distinct.
 
 # --- Team/Role IDs (assigned *after* classification/resolution) ---
@@ -59,7 +59,7 @@ CENTRAL_FRACTION_FOR_COLOR = 0.5 # Fraction of bbox center to use for average co
 # --- OCR Configuration ---
 OCR_ENABLED = True # Set to False to disable OCR
 OCR_DEBUG_DIR = "ocr_debug_crops" # Directory to save OCR debug crops
-OCR_CONFIDENCE_THRESHOLD = 0.8
+OCR_CONFIDENCE_THRESHOLD = 0.6
 MIN_JERSEY_DIGITS = 1
 MAX_JERSEY_DIGITS = 2
 PADDLEOCR_LANG = 'en'
@@ -84,6 +84,12 @@ CURRENT_BALL_MARKER_RADIUS = 4
 CURRENT_BALL_MARKER_COLOR = (255, 255, 255) # White (BGR)
 CURRENT_BALL_MARKER_THICKNESS = -1 # Filled
 
+# --- Ball Circle Annotation ---
+BALL_ANNOTATION_COLOR = sv.Color.WHITE # Color for the ball circle
+BALL_CIRCLE_THICKNESS = 2
+BALL_LABEL_ENABLED = True
+BALL_LABEL_TEXT = "Ball"
+
 # --- Annotation Parameters ---
 ELLIPSE_THICKNESS = 1
 LABEL_TEXT_COLOR = sv.Color.BLACK
@@ -96,3 +102,30 @@ FRAME_STRIDE = 1 # Process every frame for tracking
 
 # --- Logging ---
 LOG_LEVEL = "WARNING" # e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+
+# --- Clip Extraction Configuration ---
+CLIP_EXTRACTION_ENABLED = True  # Master switch for this feature
+CLIP_OUTPUT_DIR = "action_clips" # Directory to save extracted clips
+
+# Defines the window around the *core interaction* to save.
+# For "1 sec before, 1 sec during, 1 sec after" feel, set these to 1.0.
+# The "during" part is the actual detected interaction.
+CLIP_SECONDS_BEFORE_INTERACTION = 1.0 # Seconds of footage before interaction starts
+CLIP_SECONDS_AFTER_INTERACTION = 1.0  # Seconds of footage after interaction ends
+
+# Minimum IoU between ball and player to be considered an interaction.
+INTERACTION_IOU_THRESHOLD = 0.01 # Lowered, as per original request
+
+# Maximum distance (in pixels) between the closest edges of ball and player bounding boxes
+# to consider them interacting, even if IoU is below threshold.
+# Adjust this based on your video resolution and typical distances.
+PROXIMITY_THRESHOLD_PIXELS = 75 # Increased from 50 for more leniency
+
+# Minimum duration an *actual interaction* (IoU or proximity met) must last
+# to qualify for triggering a clip.
+MIN_INTERACTION_DURATION_SECONDS = 0.2 # e.g., 0.2 seconds
+
+CLIP_FILENAME_TEMPLATE = "event_{event_id}_player_{player_id}_interaction_{interaction_start_frame}.mp4"
+
+CLIP_FPS_RATE = None # e.g., 15 or None to use source FPS
+CLIP_RESOLUTION = None # e.g., (1280, 720) or None to use source resolution
